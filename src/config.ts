@@ -1,8 +1,12 @@
+import { execSync } from 'child_process';
 import path from 'path';
 
 export const ASSISTANT_NAME = process.env.ASSISTANT_NAME || 'Andy';
 export const POLL_INTERVAL = 2000;
 export const SCHEDULER_POLL_INTERVAL = 60000;
+
+export const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
+export const TELEGRAM_ONLY = process.env.TELEGRAM_ONLY === "true";
 
 // Absolute paths needed for container mounts
 const PROJECT_ROOT = process.cwd();
@@ -48,6 +52,18 @@ export const TRIGGER_PATTERN = new RegExp(
   `^@${escapeRegex(ASSISTANT_NAME)}\\b`,
   'i',
 );
+
+// Container runtime detection: Docker/Podman vs Apple Container
+// Cached at module load time so all modules use the same runtime
+function detectContainerRuntime(): 'docker' | 'container' {
+  try {
+    execSync('docker info', { stdio: 'pipe' });
+    return 'docker';
+  } catch {
+    return 'container';
+  }
+}
+export const CONTAINER_RUNTIME = detectContainerRuntime();
 
 // Timezone for scheduled tasks (cron expressions, etc.)
 // Uses system timezone by default

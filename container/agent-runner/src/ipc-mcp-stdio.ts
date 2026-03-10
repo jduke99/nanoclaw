@@ -274,6 +274,80 @@ Use available_groups.json to find the JID for a group. The folder name should be
   },
 );
 
+// --- Host delegation (Claude Code bridge) ---
+
+const HOST_TASKS_DIR = path.join(IPC_DIR, 'host-tasks');
+const HOST_TASK_RESULTS_DIR = path.join(IPC_DIR, 'host-task-results');
+
+server.tool(
+  'delegate_to_host',
+  `Delegate a task to the host machine's Claude Code session, which has full system access:
+- Desktop control (mouse, keyboard, screen capture)
+- Browser automation (Playwright, Chrome extension)
+- Full filesystem (Windows + WSL2)
+- Any command on the host OS
+
+Use this when you need capabilities unavailable inside your container sandbox.
+The task runs synchronously — you wait for the result (up to the timeout).
+Keep instructions clear and self-contained (the host session has no context about your conversation).`,
+  {
+    description: z.string().describe('Brief summary of what needs to be done (for logs)'),
+    instructions: z.string().describe('Detailed instructions for Claude Code. Be explicit — include all context, URLs, file paths needed.'),
+    timeout_ms: z.number().optional().describe('How long to wait for result in ms (default: 120000 = 2min, max: 300000 = 5min)'),
+  },
+  async (args) => {
+    if (!isMain) {
+      return {
+        content: [{ type: 'text' as const, text: 'Only the main group can delegate tasks to the host.' }],
+        isError: true,
+      };
+    }
+
+    const taskId = `ht-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const maxTimeout = Math.min(args.timeout_ms || 120000, 300000);
+
+    writeIpcFile(HOST_TASKS_DIR, {
+      type: 'host_task',
+      id: taskId,
+      description: args.description,
+      instructions: args.instructions,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Poll for result file
+    const resultFile = path.join(HOST_TASK_RESULTS_DIR, `${taskId}.json`);
+    const pollInterval = 2000;
+    let elapsed = 0;
+
+    while (elapsed < maxTimeout) {
+      if (fs.existsSync(resultFile)) {
+        try {
+          const result = JSON.parse(fs.readFileSync(resultFile, 'utf-8'));
+          fs.unlinkSync(resultFile);
+          return {
+            content: [{ type: 'text' as const, text: result.success
+              ? `Host task completed:\n${result.message}`
+              : `Host task failed:\n${result.message}` }],
+            isError: !result.success,
+          };
+        } catch (err) {
+          return {
+            content: [{ type: 'text' as const, text: `Failed to read result: ${err}` }],
+            isError: true,
+          };
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      elapsed += pollInterval;
+    }
+
+    return {
+      content: [{ type: 'text' as const, text: `Host task timed out after ${maxTimeout / 1000}s. The task may still be running on the host. Task ID: ${taskId}` }],
+      isError: true,
+    };
+  },
+);
+
 // Start the stdio transport
 const transport = new StdioServerTransport();
 await server.connect(transport);

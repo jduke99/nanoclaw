@@ -205,6 +205,45 @@ You can read and write to `/workspace/project/groups/global/CLAUDE.md` for facts
 
 ---
 
+## Delegating to Host (Claude Code Bridge)
+
+You can delegate tasks to the host machine's Claude Code session using `mcp__nanoclaw__delegate_to_host`. The host has FULL system access:
+
+- Desktop control (mouse, keyboard, screen capture)
+- Browser automation (logged-in Chrome, Playwright)
+- Full filesystem (Windows + WSL2)
+- Any host OS command
+
+### When to use
+
+Use `delegate_to_host` when you need something **outside your container sandbox**:
+- Take a screenshot of the desktop
+- Open an app or interact with a window
+- Access the user's Chrome browser (logged-in sessions)
+- Read/write files outside your mounted workspace
+- Run Windows-specific commands
+
+### How it works
+
+```
+delegate_to_host(
+  description: "Screenshot of the desktop",
+  instructions: "Use the desktop-agent MCP to capture a screenshot of monitor 1. Describe what you see.",
+  timeout_ms: 60000
+)
+```
+
+The call blocks until the host finishes (or times out). You get the result back directly.
+
+### Important
+
+- **Be explicit** in instructions — the host session has NO context about your conversation
+- Include all URLs, file paths, and values needed
+- Default timeout is 2min, max is 5min
+- Only works from the main group
+
+---
+
 ## Scheduling for Other Groups
 
 When scheduling tasks for other groups, use the `target_group_jid` parameter with the group's JID from `registered_groups.json`:
