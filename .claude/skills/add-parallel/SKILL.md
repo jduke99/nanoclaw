@@ -13,7 +13,7 @@ Adds Parallel AI MCP integration to NanoClaw for advanced web research capabilit
 User must have:
 1. Parallel AI API key from https://platform.parallel.ai
 2. NanoClaw already set up and running
-3. Docker installed and running
+3. Container system working (Apple Container or Docker)
 
 ## Implementation Steps
 
@@ -21,10 +21,11 @@ Run all steps automatically. Only pause for user input when explicitly needed.
 
 ### 1. Get Parallel AI API Key
 
-Use `AskUserQuestion: Do you have a Parallel AI API key, or should I help you get one?`
+Ask the user:
+> Do you have a Parallel AI API key, or should I help you get one?
 
 **If they have one:**
-Collect it now.
+Ask them to provide it.
 
 **If they need one:**
 Tell them:
@@ -167,11 +168,12 @@ You have access to two Parallel AI research tools:
 
 **Speed:** Slower (1-20 minutes depending on depth)
 **Cost:** Higher (varies by processor tier)
-**Permission:** ALWAYS use `AskUserQuestion` before using this tool
+**Permission:** ALWAYS ask the user first before using this tool
 
 **How to ask permission:**
 ```
-AskUserQuestion: I can do deep research on [topic] using Parallel's Task API. This will take 2-5 minutes and provide comprehensive analysis with citations. Should I proceed?
+I can do deep research on [topic] using Parallel's Task API. This will take
+2-5 minutes and provide comprehensive analysis with citations. Should I proceed?
 ```
 
 **After permission - DO NOT BLOCK! Use scheduler instead:**
@@ -222,9 +224,14 @@ Build the container with updated agent runner:
 ./container/build.sh
 ```
 
+The build script will automatically:
+- Try Apple Container first
+- Fall back to Docker if Rosetta is required
+- Import to Apple Container
+
 Verify the build:
 ```bash
-echo '{}' | docker run -i --entrypoint /bin/echo nanoclaw-agent:latest "Container OK"
+echo '{}' | container run -i --entrypoint /bin/echo nanoclaw-agent:latest "Container OK"
 ```
 
 ### 7. Restart Service
@@ -233,15 +240,13 @@ Rebuild the main app and restart:
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.nanoclaw  # macOS
-# Linux: systemctl --user restart nanoclaw
+launchctl kickstart -k gui/$(id -u)/com.nanoclaw
 ```
 
 Wait 3 seconds for service to start, then verify:
 ```bash
 sleep 3
-launchctl list | grep nanoclaw  # macOS
-# Linux: systemctl --user status nanoclaw
+launchctl list | grep nanoclaw
 ```
 
 ### 8. Test Integration
@@ -287,4 +292,4 @@ To remove Parallel AI integration:
 2. Revert changes to container-runner.ts and agent-runner/src/index.ts
 3. Remove Web Research Tools section from groups/main/CLAUDE.md
 4. Rebuild: `./container/build.sh && npm run build`
-5. Restart: `launchctl kickstart -k gui/$(id -u)/com.nanoclaw` (macOS) or `systemctl --user restart nanoclaw` (Linux)
+5. Restart: `launchctl kickstart -k gui/$(id -u)/com.nanoclaw`

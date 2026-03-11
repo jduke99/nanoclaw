@@ -49,9 +49,8 @@ npx dotenv -e .env -- npx tsx .claude/skills/x-integration/scripts/setup.ts
 
 # 3. Rebuild host and restart service
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.nanoclaw  # macOS
-# Linux: systemctl --user restart nanoclaw
-# Verify: launchctl list | grep nanoclaw (macOS) or systemctl --user status nanoclaw (Linux)
+launchctl kickstart -k gui/$(id -u)/com.nanoclaw
+# Verify: launchctl list | grep nanoclaw shows PID and exit code 0
 ```
 
 ## Configuration
@@ -201,11 +200,11 @@ Add to the end of tools array (before the closing `]`):
 Change build context from `container/` to project root (required to access `.claude/skills/`):
 ```bash
 # Find:
-docker build -t "${IMAGE_NAME}:${TAG}" .
+container build -t "${IMAGE_NAME}:${TAG}" .
 
 # Replace with:
 cd "$SCRIPT_DIR/.."
-docker build -t "${IMAGE_NAME}:${TAG}" -f container/Dockerfile .
+container build -t "${IMAGE_NAME}:${TAG}" -f container/Dockerfile .
 ```
 
 ---
@@ -272,14 +271,12 @@ cat data/x-auth.json  # Should show {"authenticated": true, ...}
 
 ```bash
 npm run build
-launchctl kickstart -k gui/$(id -u)/com.nanoclaw  # macOS
-# Linux: systemctl --user restart nanoclaw
+launchctl kickstart -k gui/$(id -u)/com.nanoclaw
 ```
 
 **Verify success:**
 ```bash
-launchctl list | grep nanoclaw  # macOS — should show PID and exit code 0 or -
-# Linux: systemctl --user status nanoclaw
+launchctl list | grep nanoclaw  # Should show PID and exit code 0 or -
 ```
 
 ## Usage via WhatsApp
@@ -345,8 +342,7 @@ echo '{"content":"Test"}' | npx tsx .claude/skills/x-integration/scripts/post.ts
 
 ```bash
 npx dotenv -e .env -- npx tsx .claude/skills/x-integration/scripts/setup.ts
-launchctl kickstart -k gui/$(id -u)/com.nanoclaw  # macOS
-# Linux: systemctl --user restart nanoclaw
+launchctl kickstart -k gui/$(id -u)/com.nanoclaw
 ```
 
 ### Browser Lock Files
@@ -406,7 +402,7 @@ If MCP tools not found in container:
 ./container/build.sh 2>&1 | grep -i skill
 
 # Check container has the file
-docker run nanoclaw-agent ls -la /app/src/skills/
+container run nanoclaw-agent ls -la /app/src/skills/
 ```
 
 ## Security
