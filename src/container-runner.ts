@@ -225,6 +225,12 @@ function buildVolumeMounts(
 function buildContainerArgs(mounts: VolumeMount[], containerName: string): string[] {
   const args: string[] = ['run', '-i', '--rm', '--name', containerName];
 
+  // For Podman: use --userns=keep-id to map host user to container user
+  // This prevents permission issues in Podman rootless mode
+  if (CONTAINER_RUNTIME === 'docker' || process.env.PODMAN_USERNS !== 'false') {
+    args.push('--userns=keep-id');
+  }
+
   // Apple Container: --mount for readonly, -v for read-write
   for (const mount of mounts) {
     if (mount.readonly) {

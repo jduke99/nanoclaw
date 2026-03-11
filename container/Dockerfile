@@ -59,6 +59,9 @@ RUN printf '#!/bin/bash\nset -e\n[ -f /workspace/env-dir/env ] && export $(cat /
 # Set ownership to node user (non-root) for writable directories
 RUN chown -R node:node /workspace
 
+# Create and own /home/node directory for Claude Code debug/cache
+RUN mkdir -p /home/node && chown -R node:node /home/node
+
 # Switch to non-root user (required for --dangerously-skip-permissions)
 USER node
 
