@@ -1,5 +1,6 @@
 import { ASSISTANT_NAME } from './config.js';
 import { Channel, NewMessage } from './types.js';
+import { parseTextStyles, ChannelType } from './text-styles.js';
 
 export function escapeXml(s: string): string {
   return s
@@ -25,7 +26,8 @@ export function formatOutbound(channel: Channel, rawText: string): string {
   if (!text) return '';
   const prefix =
     channel.prefixAssistantName !== false ? `${ASSISTANT_NAME}: ` : '';
-  return `${prefix}${text}`;
+  const formatted = parseTextStyles(text, channel.name as ChannelType);
+  return `${prefix}${formatted}`;
 }
 
 export function routeOutbound(

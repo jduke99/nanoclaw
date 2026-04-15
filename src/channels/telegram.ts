@@ -186,13 +186,15 @@ export class TelegramChannel implements Channel {
     try {
       const numericId = jid.replace(/^tg:/, '');
       const MAX_LENGTH = 4096;
+      const sendOpts = { parse_mode: 'Markdown' as const };
       if (text.length <= MAX_LENGTH) {
-        await this.bot.api.sendMessage(numericId, text);
+        await this.bot.api.sendMessage(numericId, text, sendOpts);
       } else {
         for (let i = 0; i < text.length; i += MAX_LENGTH) {
           await this.bot.api.sendMessage(
             numericId,
             text.slice(i, i + MAX_LENGTH),
+            sendOpts,
           );
         }
       }
